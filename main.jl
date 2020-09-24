@@ -1,6 +1,10 @@
 using LinearAlgebra
+import Pkg 
+Pkg.add("IterativeSolvers")
+using IterativeSolvers
+
 barras = 6 #se define la cantidad de barras
-r = zeros(barras,barras) #es una matriz con las reistencias, donde r[x,y] es la resitencia entre la barra x y la y.
+r = zeros(barras,barras) #es una matriz con las resitencias, donde r[x,y] es la resitencia entre la barra x y la y.
 x = zeros(barras,barras) #es una matriz con las impedancias, donde x[x,y] es la impedancia entre la barra x y la y.
 bcap = zeros(barras,barras) #es una matriz con los bcap, donde bcap[x,y] es el bcap entre la barra x y la y.
 r[1,2]=0.1
@@ -61,101 +65,166 @@ for i in 1:barras
     end
   end
 end
+matriz[1,1]=real(matriz[1,1])-11.8179152im
+matriz[2,2]=real(matriz[2,2])-23.1954965796322im
+matriz[3,3]=real(matriz[3,3])-16.5672696214169im
+matriz[4,4]=real(matriz[4,4])-14.6358820740134im
+matriz[5,5]=real(matriz[5,5])-14.1377649139613im
+matriz[6,6]=real(matriz[6,6])-17.0047269444913im
 # 1. Definición del vector X: (vectores de tensiones y ángulos de las barras)
 # X = [V1 V2 V3 V4 V5 V6 cita_1 cita_2 cita_3 cita_4 cita_5 cita_6]
 # Aquellas V desconocidas se asumen como 1 en la primera iteración y las cita 0.
-X = [1.05 1.05 1.07 1 1 1; 0 0 0 0 0 0] 
+X = [1.05 1.05 1.07 1 1 1; 0 0 0 0 0 0]
+#X = [1.05 1.05 1.07 0.9896 0.98565 1.004; 0 -0.0645772 -0.0750492 -0.0733038 -0.0925025 -0.102974] 
 
 #Potencias de las barras. Las que no se conocen, se asignan como cero; de manera que la dimensión del vector sea la correcta:
-Pbarras= [0 500 600 -700 -700 -700]
-Qbarras = [0 0 0 -700 -700 -700]
+Pbarras= [0 0.5 0.6 -0.7 -0.7 -0.7]
+Qbarras = [0 0 0 -0.7 -0.7 -0.7]
 
 # 2. Cálculo del primer missmatch: se utilizan las ecuaciones implícitas
 
-vector_missmatch = zeros(8) #Definicón del vector de missmatch
+vector_missmatch = zeros(8) #Definición del vector de missmatch
 
-for j = 2:6
-  if j < 4
-    for i in 1:barras 
-      vector_missmatch[j-1] += X[1,i]*X[1,j]*(real(matriz[j,i])*cos(X[2,j]-X[2,i])+imag(matriz[j,1])*sin(X[2,j]-X[2,i])) - Pbarras[j]
-    end
-  elseif j == 4
-    for i in 1:barras 
-      vector_missmatch[j-1] += X[1,i]*X[1,j]*(real(matriz[j,i])*cos(X[2,j]-X[2,i])+imag(matriz[j,1])*sin(X[2,j]-X[2,i])) - Pbarras[j]
-    end
+#Se especifica un valor para incializar el ciclo while
+max = 1
 
-    for i in 1:barras 
-      vector_missmatch[j] += X[1,i]*X[1,j]*(real(matriz[j,i])*sin(X[2,j]-X[2,i])+imag(matriz[j,1])*cos(X[2,j]-X[2,i])) - Qbarras[j]
-    end
-  elseif j == 5
-    for i in 1:barras 
-      vector_missmatch[j] += X[1,i]*X[1,j]*(real(matriz[j,i])*cos(X[2,j]-X[2,i])+imag(matriz[j,1])*sin(X[2,j]-X[2,i])) - Pbarras[j]
-    end
-    for i in 1:barras 
-      vector_missmatch[j+1] += X[1,i]*X[1,j]*(real(matriz[j,i])*sin(X[2,j]-X[2,i])+imag(matriz[j,1])*cos(X[2,j]-X[2,i])) - Qbarras[j]
-    end
-  else
-    for i in 1:barras 
-      vector_missmatch[j+1] += X[1,i]*X[1,j]*(real(matriz[j,i])*cos(X[2,j]-X[2,i])+imag(matriz[j,1])*sin(X[2,j]-X[2,i])) - Pbarras[j]
-    end
-    for i in 1:barras 
-      vector_missmatch[j+2] += X[1,i]*X[1,j]*(real(matriz[j,i])*sin(X[2,j]-X[2,i])+imag(matriz[j,1])*cos(X[2,j]-X[2,i])) - Qbarras[j]
-    end
-  end
-end
 
-# 3. Cálculo del Jacobiano para la iteración correspondiente:
-J = zeros(Int8,8,8)
-# Primero se agrega la submatriz de dP/d_cita que es 5x5
-for i = 2:6
+  #Se recorre para las barras de la 2 a la 6
   for j = 2:6
-    if i==j
-      for k = 1:6
-        J[i-1,j-1] += -X[1,i]*(X[1,k]*(real(matriz[i,k])*sin(X[2,i]-X[2,k])-imag(matriz[i,k])*cos(X[2,i]-X[2,k]))-X[1,i]^2 * imag(matriz[i,i]))
+    #Si son las barras 2 y 3 (j<4) entonces solo se toma en cuenta la ec. de P:
+    if j < 4
+      for i in 1:barras  
+        vector_missmatch[j-1] += X[1,j]*X[1,i]*(real(matriz[i,j])*cos(X[2,j]-X[2,i])+imag(matriz[i,j])*sin(X[2,j]-X[2,i]))
       end
+      vector_missmatch[j-1] -= Pbarras[j]
+    #Para las demás barras se usa tanto la ecuación de P como la de Q
     else
-      J[i-1,j-1] = X[1,i]*X[1,j]*(real(matriz[i,j])*sin(X[2,i]-X[2,j]) - imag(matriz[i,j])*cos(X[2,i]-X[2,j]))
+      for i in 1:barras
+        #Se forma la ecuación de P para la barra j
+        vector_missmatch[j-1] += X[1,i]*X[1,j]*(real(matriz[j,i])*cos(X[2,j]-X[2,i])+imag(matriz[j,i])*sin(X[2,j]-X[2,i])) 
+      end
+      vector_missmatch[j-1] -= Pbarras[j]
+      for i in 1:barras 
+        #Se forma la ecuación de Q para la barra j
+        vector_missmatch[j+2] += X[1,i]*X[1,j]*(real(matriz[j,i])*sin(X[2,j]-X[2,i])-imag(matriz[j,i])*cos(X[2,j]-X[2,i])) 
+      end
+      vector_missmatch[j+2] -= Qbarras[j]
     end
   end
-end
 
-# A continuación se añade la submatriz dP/dV que es de 5x3
-for i = 2:6
-  for j = 4:6
-    if i==j
-      for k = 1:6
-        J[i-1,j-1+5] += X[1,k]*(real(matriz[i,k])*cos(X[2,i]-X[2,k])+imag(matriz[i,k])*sin(X[2,i]-X[2,k])) + X[1,i]*real(matriz[i,i])
+
+
+  # 3. Cálculo del Jacobiano para la iteración correspondiente:
+  J = zeros(8,8)
+  M = zeros(5,3)
+
+  # Primero se agrega la submatriz de dP/d_cita que es 5x5
+  for i = 2:6
+    for j = 2:6
+      if i==j
+        for k = 1:6
+          J[i-1,j-1] += -X[1,i]*X[1,k]*(real(matriz[i,k])*sin(X[2,i]-X[2,k])-imag(matriz[i,k])*cos(X[2,i]-X[2,k]))
+        end
+        #println(i)
+        #println(J[i-1,j-1])
+        J[i-1,j-1] -= X[1,i]^2 * imag(matriz[i,i])
+        #println(J[i-1,j-1])
+      else
+        J[i-1,j-1] = X[1,i]*X[1,j]*(real(matriz[i,j])*sin(X[2,i]-X[2,j]) - imag(matriz[i,j])*cos(X[2,i]-X[2,j]))
       end
-    else
-      J[i-1,j-1+5] = X[1,i]*(real(matriz[i,j])*cos(X[2,i]-X[2,j]) + imag(matriz[i,j])*sin(X[2,i]-X[2,j]))
     end
   end
-end
 
-# Como tercer punto, de añade la submatriz dQ/d_cita que es 3x5
-for i = 4:6
-  for j = 2:6
-    if i==j
-      for k = 1:6
-        J[i-1+5,j-1] += X[1,i]*(X[1,k]*(real(matriz[i,k])*cos(X[2,i]-X[2,k])+imag(matriz[i,k])*sin(X[2,i]-X[2,k])) - X[1,i]^2 *real(matriz[i,i]))
+  h = 1e-9
+  for i = 2:6
+  prueba = 0
+    for j = 4:6
+      prueba = 0
+      if j == i
+        for k = 1:6
+          if k == j
+            M[i-1,j-3] += (X[1,i]+h)*(X[1,k]+h)*(real(matriz[k,i])*cos(X[2,i]-X[2,k])+imag(matriz[k,i])*sin(X[2,i]-X[2,k]))
+          else
+            M[i-1,j-3] += (X[1,i]+h)*X[1,k]*(real(matriz[k,i])*cos(X[2,i]-X[2,k])+imag(matriz[k,i])*sin(X[2,i]-X[2,k]))
+          end
+        end
+      else
+        for k = 1:6
+          if k == j
+            M[i-1,j-3] += X[1,i]*(X[1,k]+h)*(real(matriz[k,i])*cos(X[2,i]-X[2,k])+imag(matriz[k,i])*sin(X[2,i]-X[2,k]))
+          else
+            M[i-1,j-3] += X[1,i]*X[1,k]*(real(matriz[k,i])*cos(X[2,i]-X[2,k])+imag(matriz[k,i])*sin(X[2,i]-X[2,k]))
+          end
+        end
       end
-    else
-      J[i-1+5,j-1] = -X[1,i]*X[1,j]*(real(matriz[i,j])*cos(X[2,i]-X[2,j]) + imag(matriz[i,j])*sin(X[2,i]-X[2,j]))
+
+      for k = 1:6
+        println(k)
+        prueba += X[1,i]*X[1,k]*(real(matriz[k,i])*sin(X[2,i]-X[2,k])-imag(matriz[k,i])*cos(X[2,i]-X[2,k]))
+        M[i-1,j-3] -= X[1,i]*X[1,k]*(real(matriz[k,i])*cos(X[2,i]-X[2,k])+imag(matriz[k,i])*sin(X[2,i]-X[2,k]))
+      end
+      println("Barra nueva")
+      println(i)
+      println(prueba)
+      M[i-1,j-3] = M[i-1,j-3]/h;
     end
   end
-end
 
-#Por último, se añade la submatriz dQ/dV que es 3x3
-for i = 4:6
-  for j = 4:6
-    if i==j
-      for k = 1:6
-        J[i-1+5,j-1+5] += X[1,k]*(real(matriz[i,k])*sin(X[2,i]-X[2,k])-imag(matriz[i,k])*cos(X[2,i]-X[2,k])) - X[1,i]*imag(matriz[i,i])
+  # A continuación se añade la submatriz dP/dV que es de 5x3
+  for i = 2:6
+    for j = 4:6
+      if i==j
+        for k = 1:6
+          J[i-1,j-1+3] += X[1,k]*(real(matriz[i,k])*cos(X[2,i]-X[2,k])+imag(matriz[i,k])*sin(X[2,i]-X[2,k]))
+        end
+        J[i-1,j-1+3] += X[1,i]*real(matriz[i,i])
+      else
+        J[i-1,j-1+3] = X[1,i]*(real(matriz[i,j])*cos(X[2,i]-X[2,j]) + imag(matriz[i,j])*sin(X[2,i]-X[2,j]))
       end
-    else
-      J[i-1+5,j-1+5] = X[1,i]*(real(matriz[i,j])*sin(X[2,i]-X[2,j]) - imag(matriz[i,j])*cos(X[2,i]-X[2,j]))
     end
   end
-end
-#Fin del Jacobiano
 
+  # Como tercer punto, de añade la submatriz dQ/d_cita que es 3x5
+  for i = 4:6
+    for j = 2:6
+      if i==j
+        for k in 1:6
+          J[i-1+3,j-1] += X[1,i]*X[1,k]*(real(matriz[i,k])*cos(X[2,i]-X[2,k])+imag(matriz[i,k])*sin(X[2,i]-X[2,k]))
+        end
+        J[i-1+3,j-1] += -1* X[1,i]^2 *real(matriz[i,i])
+      else
+        J[i-1+3,j-1] = -X[1,i]*X[1,j]*(real(matriz[i,j])*cos(X[2,i]-X[2,j]) + imag(matriz[i,j])*sin(X[2,i]-X[2,j]))
+      end
+    end
+  end
+
+  #Por último, se añade la submatriz dQ/dV que es 3x3
+  for i = 4:6
+    for j = 4:6
+      if i==j
+        for k = 1:6
+          J[i-1+3,j-1+3] += X[1,k]*(real(matriz[i,k])*sin(X[2,i]-X[2,k])-imag(matriz[i,k])*cos(X[2,i]-X[2,k]))
+        end
+        J[i-1+3,j-1+3] += -1*X[1,i]*imag(matriz[i,i])
+      else
+        J[i-1+3,j-1+3] = X[1,i]*(real(matriz[i,j])*sin(X[2,i]-X[2,j]) - imag(matriz[i,j])*cos(X[2,i]-X[2,j]))
+      end
+    end
+  end
+  #Fin del Jacobiano
+
+  #Cálculo de LU=J: 
+  L,U,p = lu(J)
+
+
+  y = lsmr(L,-vector_missmatch)
+
+  delta_x = lsmr(U,y)  
+  delta_x2 = -inv(J)*vector_missmatch
+  X[2,2:6]=X[2,2:6]+delta_x[1:5]
+  X[1,4:6]=X[1,4:6]+delta_x[6:8]
+
+  vector_missmatch_absoluto = broadcast(abs,vector_missmatch)
+  max = maximum(vector_missmatch_absoluto)
+  println("max: ",max)
+  println(J[1])

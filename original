@@ -1,0 +1,38 @@
+#Se recorre para las barras de la 2 a la 6
+  for j = 2:6
+    #Si son las barras 2 y 3 (j<4) entonces solo se toma en cuenta la ec. de P:
+    if j < 4
+      for i in 1:barras       
+        vector_missmatch[j-1] += X[1,i]*X[1,j]*(real(matriz[j,i])*cos(X[2,j]-X[2,i])+imag(matriz[j,i])*sin(X[2,j]-X[2,i]))
+      end
+      vector_missmatch[j-1] -= Pbarras[j]
+    #Para las demás barras se usa tanto la ecuación de P como la de Q
+    else
+      for i in 1:barras 
+        #Se forma la ecuación de P para la barra j
+        vector_missmatch[j-1] += X[1,i]*X[1,j]*(real(matriz[j,i])*cos(X[2,j]-X[2,i])+imag(matriz[j,i])*sin(X[2,j]-X[2,i])) 
+      end
+      vector_missmatch[j-1] -= Pbarras[j]
+      for i in 1:barras 
+        #Se forma la ecuación de Q para la barra j
+        vector_missmatch[j+2] += X[1,i]*X[1,j]*(real(matriz[j,i])*sin(X[2,j]-X[2,i])-imag(matriz[j,i])*cos(X[2,j]-X[2,i])) 
+      end
+      vector_missmatch[j+2] -= Qbarras[j]
+    end
+  end
+
+
+
+matriz = zeros(Complex{Float64},barras,barras)
+for i in 1:barras
+  for j in 1:barras
+    if j == i
+      matriz[i,i] = matriz[i,i] -(bcap[i,i])im
+    else
+      if r[i,j] != 0
+        matriz[i,j]= -r[i,j]/(r[i,j]^2+x[i,j]^2) + (x[i,j]/(r[i,j]^2+x[i,j]^2))im
+        matriz[i,i]=matriz[i,i]-(bcap[i,j])im -matriz[i,j]
+      end    
+    end
+  end
+end

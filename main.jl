@@ -52,6 +52,7 @@ for i in 1:barras
 end
 # ahora se forma la matriz de admitancias utilizando las fórmulas conocidas, donde Y=r/(r^2+x^2)+jx/(r^2+x^2)
 #Y utilizando el modelo pi entre las líneas, por lo que bcap es una admitancia que va de la línea a tierra.
+
 matriz = zeros(Complex{Float64},barras,barras)
 for i in 1:barras
   for j in 1:barras
@@ -82,14 +83,16 @@ X = [1.05 1.05 1.07 1 1 1; 0 0 0 0 0 0]
 Pbarras= [0 0.5 0.6 -0.7 -0.7 -0.7]
 Qbarras = [0 0 0 -0.7 -0.7 -0.7]
 
-# 2. Cálculo del primer missmatch: se utilizan las ecuaciones implícitas
-
-vector_missmatch = zeros(8) #Definición del vector de missmatch
+#Definición del vector de missmatch
 
 #Se especifica un valor para incializar el ciclo while
-max = 1
+global max = 1
+global contador = 0
 
 
+
+while max > 1e-6
+  global vector_missmatch = zeros(8)
   #Se recorre para las barras de la 2 a la 6
   for j = 2:6
     #Si son las barras 2 y 3 (j<4) entonces solo se toma en cuenta la ec. de P:
@@ -117,7 +120,6 @@ max = 1
 
   # 3. Cálculo del Jacobiano para la iteración correspondiente:
   J = zeros(8,8)
-  M = zeros(5,3)
 
   # Primero se agrega la submatriz de dP/d_cita que es 5x5
   for i = 2:6
@@ -189,7 +191,25 @@ max = 1
   delta_x2 = -inv(J)*vector_missmatch
   X[2,2:6]=X[2,2:6]+delta_x[1:5]
   X[1,4:6]=X[1,4:6]+delta_x[6:8]
-
+  global contador +=1
   vector_missmatch_absoluto = broadcast(abs,vector_missmatch)
-  max = maximum(vector_missmatch_absoluto)
-  println("max: ",max)
+  global max = maximum(vector_missmatch_absoluto)
+  println("\n Iteración número ", contador)
+  for x =1:barras
+    println("Tensión de la barra ", x,": ", round(X[1,x]*230,digits=4)," kV <",round(X[2,x]*(180/pi),digits = 4),"°")
+  end
+end
+
+#Impresión de potencias:
+P_finales = zeros(1,6)
+Q_finales = zeros(1,6)
+for k = 1:6
+  for i = 1:6
+    P_finales[1,k] += X[1,k]*X[1,i]*(real(matriz[k,i])*cos(X[2,k]-X[2,i])+imag(matriz[k,i])*sin(X[2,k]-X[2,i]))
+    Q_finales[1,k] += X[1,k]*X[1,i]*(real(matriz[k,i])*sin(X[2,k]-X[2,i])-imag(matriz[k,i])*cos(X[2,k]-X[2,i]))
+  end
+end
+println("\n Flujos de potencias de las barras hacia el sistema:")
+for i = 1:barras
+  println("Barra ", i, ": ", "P = ", round(P_finales[i]*100,digits = 4), " MW  Q = ", round(Q_finales[i]*100,digits=4), " MVAr")
+end

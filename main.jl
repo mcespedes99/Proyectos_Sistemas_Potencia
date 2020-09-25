@@ -60,17 +60,18 @@ for i in 1:barras
     else
       if r[i,j] != 0
         matriz[i,j]= -r[i,j]/(r[i,j]^2+x[i,j]^2) + (x[i,j]/(r[i,j]^2+x[i,j]^2))im
-        matriz[i,i]=matriz[i,i]-(bcap[i,j])im -matriz[i,j]
+        cap = (bcap[i,j])*1im
+        matriz[i,i]+=cap-matriz[i,j]
       end    
     end
   end
 end
-matriz[1,1]=real(matriz[1,1])-11.8179152im
-matriz[2,2]=real(matriz[2,2])-23.1954965796322im
-matriz[3,3]=real(matriz[3,3])-16.5672696214169im
-matriz[4,4]=real(matriz[4,4])-14.6358820740134im
-matriz[5,5]=real(matriz[5,5])-14.1377649139613im
-matriz[6,6]=real(matriz[6,6])-17.0047269444913im
+#atriz[1,1]=real(matriz[1,1])-11.8179152im
+#matriz[2,2]=real(matriz[2,2])-23.1954965796322im
+#matriz[3,3]=real(matriz[3,3])-16.5672696214169im
+#matriz[4,4]=real(matriz[4,4])-14.6358820740134im
+#matriz[5,5]=real(matriz[5,5])-14.1377649139613im
+#matriz[6,6]=real(matriz[6,6])-17.0047269444913im
 # 1. Definición del vector X: (vectores de tensiones y ángulos de las barras)
 # X = [V1 V2 V3 V4 V5 V6 cita_1 cita_2 cita_3 cita_4 cita_5 cita_6]
 # Aquellas V desconocidas se asumen como 1 en la primera iteración y las cita 0.
@@ -135,41 +136,6 @@ max = 1
     end
   end
 
-  h = 1e-9
-  for i = 2:6
-  prueba = 0
-    for j = 4:6
-      prueba = 0
-      if j == i
-        for k = 1:6
-          if k == j
-            M[i-1,j-3] += (X[1,i]+h)*(X[1,k]+h)*(real(matriz[k,i])*cos(X[2,i]-X[2,k])+imag(matriz[k,i])*sin(X[2,i]-X[2,k]))
-          else
-            M[i-1,j-3] += (X[1,i]+h)*X[1,k]*(real(matriz[k,i])*cos(X[2,i]-X[2,k])+imag(matriz[k,i])*sin(X[2,i]-X[2,k]))
-          end
-        end
-      else
-        for k = 1:6
-          if k == j
-            M[i-1,j-3] += X[1,i]*(X[1,k]+h)*(real(matriz[k,i])*cos(X[2,i]-X[2,k])+imag(matriz[k,i])*sin(X[2,i]-X[2,k]))
-          else
-            M[i-1,j-3] += X[1,i]*X[1,k]*(real(matriz[k,i])*cos(X[2,i]-X[2,k])+imag(matriz[k,i])*sin(X[2,i]-X[2,k]))
-          end
-        end
-      end
-
-      for k = 1:6
-        println(k)
-        prueba += X[1,i]*X[1,k]*(real(matriz[k,i])*sin(X[2,i]-X[2,k])-imag(matriz[k,i])*cos(X[2,i]-X[2,k]))
-        M[i-1,j-3] -= X[1,i]*X[1,k]*(real(matriz[k,i])*cos(X[2,i]-X[2,k])+imag(matriz[k,i])*sin(X[2,i]-X[2,k]))
-      end
-      println("Barra nueva")
-      println(i)
-      println(prueba)
-      M[i-1,j-3] = M[i-1,j-3]/h;
-    end
-  end
-
   # A continuación se añade la submatriz dP/dV que es de 5x3
   for i = 2:6
     for j = 4:6
@@ -227,4 +193,3 @@ max = 1
   vector_missmatch_absoluto = broadcast(abs,vector_missmatch)
   max = maximum(vector_missmatch_absoluto)
   println("max: ",max)
-  println(J[1])

@@ -90,8 +90,8 @@ global max = 1
 global contador = 0
 
 
-
-while max > 1e-6
+#Ciclo while: Se detienen las iteraciones hasta que el mayor valor del vector_missmatch sea menor a 1e-6 o hasta que se cumplan 25 iteraciones
+while (max > 1e-6) & (contador < 25)
   global vector_missmatch = zeros(8)
   #Se recorre para las barras de la 2 a la 6
   for j = 2:6
@@ -184,21 +184,32 @@ while max > 1e-6
   #Cálculo de LU=J: 
   L,U,p = lu(J)
 
-
+  #Cálculo de "Delta x" mediante método de mínimos cuadrados.
   y = lsmr(L,-vector_missmatch)
 
   delta_x = lsmr(U,y)  
   delta_x2 = -inv(J)*vector_missmatch
   X[2,2:6]=X[2,2:6]+delta_x[1:5]
   X[1,4:6]=X[1,4:6]+delta_x[6:8]
+
+  #Se suma 1 al contador de iteraciones
   global contador +=1
+
+  #Se haya el valor absoluto de cada uno de los valores en el vector_missmatch_absoluto actual
   vector_missmatch_absoluto = broadcast(abs,vector_missmatch)
+
+  #Se averigua cuál es el mayor valor en el vector_missmatch
   global max = maximum(vector_missmatch_absoluto)
   println("\n Iteración número ", contador)
-  for x =1:barras
-    println("Tensión de la barra ", x,": ", round(X[1,x]*230,digits=4)," kV <",round(X[2,x]*(180/pi),digits = 4),"°")
-  end
+  println("\n Valor máximo del vector mismatch: ", max)
+
+
 end
+
+#Impresión de las tensiones de las barras
+for x =1:barras
+    println("Tensión de la barra ", x,": ", round(X[1,x],digits=4)," p.u. <",round(X[2,x]*(180/pi),digits = 4),"°")
+  end
 
 #Impresión de potencias:
 P_finales = zeros(1,6)

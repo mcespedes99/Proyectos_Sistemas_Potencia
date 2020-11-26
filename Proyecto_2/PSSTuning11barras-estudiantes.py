@@ -103,7 +103,9 @@ Tp=1/(wi*math.sqrt(ap))
 
 # calculo de constantes de tiempo en bloques de compensación realm. positiva
 T1p=Tp
+print(T1p)
 T2p=ap*Tp
+print(T2p)
 
 Tw=1.5 #Revisar si debe ser 1.5 o 10
 

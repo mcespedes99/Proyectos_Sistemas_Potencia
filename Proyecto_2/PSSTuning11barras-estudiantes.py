@@ -46,6 +46,9 @@ num, den = signal.ss2tf(A, B, C, D)
 # Obtener residuos r y polos p de la función de transferencia
 num = num.reshape((np.size(num),))
 den = den.reshape((np.size(den),))
+
+sys = control.tf(num,den)
+
 r, p, k = signal.residue(num, den)
 
 # Determinar índices de polos inestables
@@ -74,10 +77,12 @@ print(msg)
 
 thetaRi=cmath.phase(ri)
 
+
 # Diseño del PSS
 #Para Caso C:
 if thetaRi < 0:
     thetaRi += 2*np.pi
+
 # Caso A y B
 if 0 <= thetaRi and thetaRi <= np.pi:
     thetaPSSpos = np.pi - thetaRi
@@ -91,7 +96,7 @@ Np=math.ceil(abs(thetaPSSpos)/(math.pi/3))
 ap=(1-math.sin(thetaPSSpos/Np))/(1+math.sin(thetaPSSpos/Np))
 
 # frecuencia de oscilacion a amortiguar
-wi=lmbda[pos].imag
+wi=p[pos].imag
 
 # valor de T del bloque con realim. positivo
 Tp=1/(wi*math.sqrt(ap))
@@ -105,17 +110,5 @@ Tw=1.5 #Revisar si debe ser 1.5 o 10
 # creacion de FT de los bloques para realm pos.
 bloquepos=control.tf([T1p, 1],[T2p, 1])
 
-
 # creacion de bloque Washout (se usa igual a modelo generic1 de RAMSES)
-WS=control.tf([Tw, 0],[Tw, 1])
-
-# se grafica un ejemplo de diagrama de bode para bloque de comp. en realm. positiva
-bodeplot = control.bode_plot(bloquepos)
-plt.savefig('bode.pdf')
-
-# funcion de transferencia de lazo cerrado (realm. positiva)
-TFpos=sys/(1-bloquepos**Np*sys*WS)
-
-# Se grafica el Lugar geometrico de las raices para el sistema de lazo abierto
-rlocus=control.root_locus(-bloquepos**Np*sys*WS,xlim=(-40,40),ylim=(-40,40))
-plt.savefig('root_locus.pdf')
+WS=control.tf([1, 0],[Tw, 1])

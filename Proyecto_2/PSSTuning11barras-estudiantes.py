@@ -2,11 +2,17 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import math
+import cmath
 from numpy import linalg as LA
 from scipy import signal
+import control
+control.use_matlab_defaults()
+import matplotlib.pyplot as plt
+
 
 # Cargar matrices A, B, C y D
-files = ['A.txt', 'B.txt', 'C.txt']
+files = ['Proyecto_2/A.txt', 'Proyecto_2/B.txt', 'Proyecto_2/C.txt']
 matrices = []
 for file in files:
     matrix = []
@@ -72,14 +78,13 @@ thetaRi=cmath.phase(ri)
 #Para Caso C:
 if thetaRi < 0:
     thetaRi += 2*np.pi
-
 # Caso A y B
 if 0 <= thetaRi and thetaRi <= np.pi:
     thetaPSSpos = np.pi - thetaRi
 else:
     thetaPSSpos = thetaRi - np.pi
 
-# Cálculo de número de bloques de compensacion requeridos
+# Calculo de numero de bloques de compensacion requeridos
 Np=math.ceil(abs(thetaPSSpos)/(math.pi/3))
 
 # calculo de valor a en bloques de compensacion, para realm. positiva
@@ -95,14 +100,14 @@ Tp=1/(wi*math.sqrt(ap))
 T1p=Tp
 T2p=ap*Tp
 
-Tw=1.5
+Tw=1.5 #Revisar si debe ser 1.5 o 10
 
 # creacion de FT de los bloques para realm pos.
 bloquepos=control.tf([T1p, 1],[T2p, 1])
 
 
 # creacion de bloque Washout (se usa igual a modelo generic1 de RAMSES)
-WS=control.tf([1, 0],[Tw, 1])
+WS=control.tf([Tw, 0],[Tw, 1])
 
 # se grafica un ejemplo de diagrama de bode para bloque de comp. en realm. positiva
 bodeplot = control.bode_plot(bloquepos)

@@ -97,6 +97,7 @@ ap=(1-math.sin(thetaPSSpos/Np))/(1+math.sin(thetaPSSpos/Np))
 
 # frecuencia de oscilacion a amortiguar
 wi=p[pos].imag
+print(wi/(2*math.pi))
 
 # valor de T del bloque con realim. positivo
 Tp=1/(wi*math.sqrt(ap))
@@ -107,7 +108,7 @@ print(T1p)
 T2p=ap*Tp
 print(T2p)
 
-Tw=1.5 #Revisar si debe ser 1.5 o 10
+Tw=10 #Revisar si debe ser 1.5 o 10
 
 # creacion de FT de los bloques para realm pos.
 bloquepos=control.tf([T1p, 1],[T2p, 1])

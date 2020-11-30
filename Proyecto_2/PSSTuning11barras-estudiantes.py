@@ -50,7 +50,7 @@ den = den.reshape((np.size(den),))
 sys = control.tf(num,den)
 
 r, p, k = signal.residue(num, den)
-
+print("\n")
 # Determinar índices de polos inestables
 ind_unstable = []
 for (i, pole) in enumerate(p):
@@ -66,7 +66,7 @@ for i in ind_unstable:
 ri = r[pos]
 
 # Desplegar polos y residuos
-msg = 'Polo con parte imaginaria positiva: ' + str(np.around(p[pos], places))
+msg = '\nPolo con parte imaginaria positiva: ' + str(np.around(p[pos], places))
 print(msg)
 # Desplegar residuo
 msg = 'Residuo asociado a polo con parte imaginaria positiva: ' \
@@ -97,18 +97,21 @@ ap=(1-math.sin(thetaPSSpos/Np))/(1+math.sin(thetaPSSpos/Np))
 
 # frecuencia de oscilacion a amortiguar
 wi=p[pos].imag
-print(wi/(2*math.pi))
+print("\nFrecuencia de oscilación a amortiguar: "+str(np.around(wi/(2*math.pi), places))+" Hz")
 
 # valor de T del bloque con realim. positivo
 Tp=1/(wi*math.sqrt(ap))
 
 # calculo de constantes de tiempo en bloques de compensación realm. positiva
+print("\nConstantes de tiempo de bloques de compensación:")
 T1p=Tp
-print(T1p)
+print("T_1= "+str(np.around(T1p, places))+" s")
 T2p=ap*Tp
-print(T2p)
+print("T_2= "+str(np.around(T1p, places))+" s")
 
 Tw=10 #Revisar si debe ser 1.5 o 10
+print("\nConstante de tiempo de filtro Washout:")
+print("Tw= "+str(np.around(Tw, places))+" s")
 
 # creacion de FT de los bloques para realm pos.
 bloquepos=control.tf([T1p, 1],[T2p, 1])

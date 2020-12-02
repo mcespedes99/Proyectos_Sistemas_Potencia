@@ -107,7 +107,7 @@ print("\nConstantes de tiempo de bloques de compensación:")
 T1p=Tp
 print("T_1= "+str(np.around(T1p, places))+" s")
 T2p=ap*Tp
-print("T_2= "+str(np.around(T1p, places))+" s")
+print("T_2= "+str(np.around(T2p, places))+" s")
 
 Tw=10 #Revisar si debe ser 1.5 o 10
 print("\nConstante de tiempo de filtro Washout:")
